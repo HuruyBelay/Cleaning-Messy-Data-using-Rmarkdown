@@ -1,0 +1,146 @@
+---
+title: "Cleaning data using Rmarkdown"
+author: "Huruy Belay"
+date: "May 19, 2017"
+output: html_document
+---
+
+## Data cleaning on school attendance
+
+We will work with attendance data from public schools in the US, organized by school level and state, during the 2007-2008 academic year. The data contain information on average daily attendance (ADA) as a percentage of total enrollment, school day length, and school year length.
+
+I got the data from Datacamp training.
+
+We can [view](http://s3.amazonaws.com/assets.datacamp.com/production/course_1294/datasets/attendance_screenshot.png) a screenshot of the data.
+
+#### Loading libraries
+
+```{r, results='hide',warning=FALSE, message=FALSE}
+library(gdata)
+library(stringr)
+library(dplyr)
+```
+
+#### Importing data
+
+In order to inmport the xls file, we have to download perl first.
+
+```{r, results='hide'}
+att <- read.xls("attendance.xls", perl = "C:\\Perl\\bin\\perl.exe")
+att
+```
+
+#### Examining the structure 
+
+The next step should be examining the data through the following:
+
+```{r, results='hide'}
+names(att)
+head(att)
+tail(att)
+str(att)
+```
+
+#### Removing unnecessary rows and columns
+
+* **Remove rows 3 and from 66 to 69**
+
+```{r}
+att2 <- att[-c(3, 66:69), ]
+```
+
+* **Remove columns 3, 5, 7, 9, 11, 13, 15, 17 **
+
+```{r}
+att3 <- att2[, -c(3, 5, 7, 9, 11, 13, 15, 17)]
+```
+
+#### Splitting the data
+
+If you observe the dataset stores multiple tables of information. You can often diagnose this problem by looking at the column names and noticing duplicate rows.
+
+* Columns 1, 6, and 7 represent attendance data for US elementary schools,
+* Columns 1, 8, and 9 represent data for secondary schools and
+* columns 1 through 5 represent data for all schools in the US.
+
+Each of these should be stored as its own separate data frame, therefore we should split them.
+
+* **Subset for elementary schools:**
+
+```{r}
+elem_att <- att3[, c(1, 6, 7)]
+```
+
+* ** Subset for secondary schools:**
+
+```{r}
+seco_att <- att3[, c(1, 8, 9)]
+```
+
+* **Subset for all schools:**
+
+```{r}
+att4 <- att3[, 1:5]
+```
+
+#### Replacing the names
+
+It is better if we modified the column names:
+
+```{r}
+cnames <- c("state", "avg_attend_pct", "avg_hr_per_day", 
+            "avg_day_per_yr", "avg_hr_per_yr")
+
+colnames(att4) <- cnames
+
+```
+
+Nice and better if we remove the first two rows of all_att data.
+
+```{r}
+att5 <- att4[-c(1, 2), ]
+```
+
+#### Cleaning up extra characters
+
+If we look the variable state on the att5 dataset, the state variable should have to clean. To clean the variable we will use the regular expression. 
+
+```{r}
+# Remove all periods in state column
+
+att5$state <- str_replace_all(att5$state, "\\.", "")
+```
+
+```{r}
+# Remove white space around state names
+
+att5$state <- str_trim(att5$state)
+```
+
+```{r}
+# View the head of att5
+
+head(att5)
+str(att5)
+```
+
+Finally we should have to change some of the variables to numeric. We can change by two methods.
+
+```{r}
+# Using the dply package:
+att5 <- mutate_each(att5, funs(as.numeric), -state)
+```
+
+**OR**
+
+```{r}
+# using the sapply 
+att5[, 2:ncol(att5)] <- sapply(att5[, 2:ncol(att5)], as.numeric)
+```
+
+** Checking using str function**
+
+```{r}
+str(att5)
+```
+
